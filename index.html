@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mk Map Server 3</title>
+  </head>
+  <body>
+    <div id="main-well" class="max-h-screen h-screen max-w-screen w-screen bg-base-200">
+      <div class="navbar bg-base-100 shadow-sm">
+        <div class="">
+          <a class="btn btn-ghost text-xl">MK Map Server</a>
+        </div>
+        <div class="ml-auto">
+          <button id="open-external-screen-btn" class="btn btn-ghost">
+            <i data-lucide="external-link"></i>
+            Detect and Open External Screen
+          </button>
+        </div>
+      </div>
+      <div id="content-well" class="overflow-scroll h-[calc(100vh-4rem)]">
+        <div class="grid p-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 grid-rows-auto">
+          <div class="w-full h-full rounded-md shadow-sm bg-base-100 p-3">
+            <fieldset class="fieldset p-2">
+              <legend class="fieldset-legend">Map Settings</legend>
+
+              <!-- base map selection -->
+              <label class="label">Select Map</label>
+              <input
+                type="file"
+                id="base-map-input"
+                class="file-input file-input-bordered w-full"
+                accept=".png,.jpg,.jpeg,.bmp,.gif"
+              />
+              <label class="label">Select Background (optional)</label>
+              <select id="background-select" class="select select-bordered w-full">
+                <option value="None" selected>None</option>
+              </select>
+              <label class="label">Background Fade Amount</label>
+              <input
+                type="range"
+                id="background-fade-range"
+                class="range range-primary w-full"
+                min="70"
+                max="100"
+                step="10"
+                value="80"
+              />
+            </fieldset>
+          </div>
+
+          <div class="w-full h-full bg-neutral border-base-300 rounded-md shadow-sm p-3">
+            <zoom-select></zoom-select>
+          </div>
+          <div
+            class="gap-3 w-full h-full md:col-span-2 xl:col-span-3 border-base-300 p-3 rounded-md shadow-sm bg-base-100 flex flex-col justify-center items-start"
+          >
+            <div class="text-xl font-semibold">Map Preview</div>
+            <div class="flex flex-row gap-3 justify-start items-center">
+              <label class="label">
+                <input type="checkbox" id="enable-fog-drawing-checkbox" class="checkbox" />
+                Enable fog drawing
+                <div class="tooltip" data-tip="Left click and drag to draw fog. Right click and drag to erase fog.">
+                  <i data-lucide="info"></i>
+                </div>
+              </label>
+
+              <button id="clear-svg-btn" class="btn btn-sm btn-secondary">
+                <i data-lucide="trash"></i>
+                Clear Fog Drawing
+              </button>
+              <button id="rotate-btn" class="btn btn-sm btn-secondary">
+                <i data-lucide="rotate-ccw"></i>
+                Rotate Map 90°
+              </button>
+              <button id="send-to-external-screen-btn" class="btn-sm btn btn-primary mt-2 mb-2">
+                <i data-lucide="radio-tower"></i>
+                Send to External Screen
+              </button>
+            </div>
+            <label class="label">
+              <input
+                type="range"
+                id="circle-radius"
+                class="range range-primary w-full"
+                min="10"
+                max="100"
+                step="10"
+                value="50"
+              />
+              Circle Radius
+            </label>
+
+            <preview-screen id="map-canvas" style="width: 500px; height: 500px"></preview-screen>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
