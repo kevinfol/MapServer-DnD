@@ -13,7 +13,7 @@ export class PreviewScreen extends HTMLElement {
   constructor() {
     super();
     this.fade = null;
-    this.scale = 1;
+    this.scale = null;
     this.currentTranslate = [0, 0];
   }
   connectedCallback() {
@@ -91,6 +91,7 @@ export class PreviewScreen extends HTMLElement {
     const zoomSelectElement = document.querySelector('zoom-select');
     zoomSelectElement.querySelector('#panzoom-element').addEventListener('panzoomchange', (event) => {
       const { scale, x, y } = event.detail;
+      const scale2 = scale * zoomSelectElement.initialScale;
       this.currentTranslate = [x, y];
       const currentRotationMatch = this.mapImg.style.transform.match(/rotate\(([-\d.]+)deg\)/);
       let rotation = 0;
@@ -98,7 +99,7 @@ export class PreviewScreen extends HTMLElement {
         rotation = parseFloat(currentRotationMatch[1]);
       }
 
-      this.mapImg.style.transform = `translate(-50%, -50%) scale(${scale * this.scale}) translate(${this.currentTranslate[0]}px, ${this.currentTranslate[1]}px) rotate(${rotation}deg)`;
+      this.mapImg.style.transform = `translate(-50%, -50%) scale(${scale * this.scale / this.screenScale}) translate(${this.currentTranslate[0]}px, ${this.currentTranslate[1]}px) rotate(${rotation}deg)`;
     });
     this.svgElement.addEventListener('click', (event) => {
       if (document.getElementById('enable-fog-drawing-checkbox').checked === false) {
@@ -127,15 +128,23 @@ export class PreviewScreen extends HTMLElement {
   }
   setImageSource(src) {
     this.mapImg.src = src;
+    this.mapImg.onload = () => {
+      const naturalWidth = this.mapImg.naturalWidth;
+      const naturalHeight = this.mapImg.naturalHeight;
+      const containerWidth = this.clientWidth;
+      const containerHeight = this.clientHeight;
+      const widthScale = containerWidth / naturalWidth;
+      const heightScale = containerHeight / naturalHeight;
+      this.scale = Math.min(widthScale, heightScale);
+    }
   }
   setNewDimensions() {
     const w = this.clientWidth;
     const h = this.clientHeight;
     const screenW = externalScreen.availWidth;
     const screenH = externalScreen.availHeight;
+    this.screenScale = Math.min(screenW / w, screenH / h);
     this.svgElement.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    this.scale = Math.min(w / screenW, h / screenH);
-    console.log('New scale:', this.scale);
     this.minRadius = Math.min(w, h) / 100;
     this.maxRadius = Math.min(w, h) / 5;
     this.setCircleRadius(document.getElementById('circle-radius').value);

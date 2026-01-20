@@ -3,7 +3,7 @@ import Panzoom from '@panzoom/panzoom';
 export class ZoomSelect extends HTMLElement {
   constructor() {
     super();
-    this.initialScale = 1;
+    this.initialScale = null;
   }
   connectedCallback() {
     this.className = 'relative w-full h-full bg-base-200 rounded-md overflow-hidden';
@@ -19,8 +19,8 @@ export class ZoomSelect extends HTMLElement {
     img.id = 'panzoom-image';
     img.className = 'origin-center';
     img.onload = () => {
-      this.initializePanzoom();
       this.setInitalImgScale();
+      this.initializePanzoom();
     };
     panzoomElement.appendChild(img);
     panzoomParent.appendChild(panzoomElement);
