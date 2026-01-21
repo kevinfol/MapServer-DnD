@@ -128,7 +128,11 @@ function connectEvents() {
     }
 
     const div = document.createElement('div');
-    div.className = 'relative w-screen h-screen overflow-hidden bg-black';
+    div.className = `relative overflow-hidden bg-black`
+    div.style.width = '100%';
+    div.style.height = '100%';
+    div.style.transformOrigin = 'top left';
+    div.style.transform = 'scale(1)'
     externalWindow.document.body.appendChild(div);
 
     const bg_image = document.createElement('img');
@@ -154,6 +158,7 @@ function connectEvents() {
     map_image.src = previewScreenElement.mapImg.src;
     div.appendChild(map_image);
 
+
     const svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svgElement.setAttribute('width', '100%');
     svgElement.setAttribute('height', '100%');
@@ -167,8 +172,18 @@ function connectEvents() {
 
     let i = 0;
     for (const circle of svgElement.querySelectorAll('circle')) {
+      const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      bgCircle.setAttribute('cx', circle.getAttribute('cx'));
+      bgCircle.setAttribute('cy', circle.getAttribute('cy'));
+      bgCircle.setAttribute('r', circle.getAttribute('r'));
+      bgCircle.setAttribute('fill', grays[i % grays.length] + 'f2');
+      bgCircle.setAttribute('filter', 'url(#fogFilter)');
+      bgCircle.setAttribute('mask', 'url(#mapMask)');
+      svgElement.insertBefore(bgCircle, circle);
+
       circle.setAttribute('filter', 'url(#fogFilter)');
-      circle.setAttribute('fill', grays[i % grays.length] + 'f2');
+      circle.setAttribute('fill', 'url(#fogGradient' + (i % 4) + ')');
+      circle.setAttribute('mask', 'url(#mapMask)');
       i++;
       const newCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       newCircle.setAttribute('cx', circle.getAttribute('cx'));
@@ -176,11 +191,75 @@ function connectEvents() {
       newCircle.setAttribute('r', circle.getAttribute('r'));
       newCircle.setAttribute('filter', 'url(#fogFilter)');
       newCircle.setAttribute('fill', 'url(#diaHatch' + (i % 4) + ')');
-      svgElement.appendChild(newCircle);
+      newCircle.setAttribute('mask', 'url(#mapMask)');
+
+      circle.after(newCircle);
     }
+    map_image.onload = () => {
+
+
+
+      const svgMask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+      svgMask.setAttribute('id', 'mapMask');
+      //svgMask.setAttribute('maskUnits', 'userSpaceOnUse');
+      //svgMask.setAttribute('width', div.clientWidth);
+      //svgMask.setAttribute('height', div.clientHeight);
+      const map_imageRect = map_image.getBoundingClientRect();
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+
+      const redRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      redRect.setAttribute('x', map_image.offsetLeft - 0.5 * map_image.offsetWidth);
+      redRect.setAttribute('y', map_image.offsetTop - 0.5 * map_image.offsetHeight);
+      redRect.setAttribute('width', map_image.offsetWidth);
+      redRect.setAttribute('height', map_image.offsetHeight);
+      redRect.setAttribute('fill', 'none');
+      redRect.setAttribute('stroke', 'red');
+      redRect.setAttribute('stroke-width', '2');
+      //
+      svgElement.appendChild(redRect);
+
+
+      rect.setAttribute('x', map_imageRect.left);
+      rect.setAttribute('y', map_imageRect.top);
+      rect.setAttribute('transform-origin', 'center');
+      rect.setAttribute('width', map_imageRect.width);
+      rect.setAttribute('height', map_imageRect.height);
+      const mapImgMaskClasses = previewScreenElement.mapImg.className.split(' ').filter((cn) => cn.startsWith('mask-'));
+      //if (mapImgMaskClasses.length > 0) {
+      //  rect.setAttribute('class', mapImgMaskClasses.join(' '));
+      //};
+
+      rect.setAttribute('fill', 'white');
+      svgMask.appendChild(rect);
+      svgElement.appendChild(svgMask);
+    }
+
 
     const defElement = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
     defElement.innerHTML = `
+      <!-- gradients for fog effect -->
+      <linearGradient id="fogGradient0" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:white; stop-opacity:0.1" />
+        <stop offset="50%" style="stop-color:white; stop-opacity:0.3" />
+        <stop offset="100%" style="stop-color:white; stop-opacity:0.1" />
+      </linearGradient>
+      <linearGradient id="fogGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:white; stop-opacity:0.3" />
+        <stop offset="50%" style="stop-color:white; stop-opacity:0.5" />
+        <stop offset="100%" style="stop-color:white; stop-opacity:0.3" />
+      </linearGradient>
+      <linearGradient id="fogGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:white; stop-opacity:0.2" />
+        <stop offset="50%" style="stop-color:white; stop-opacity:0.4" />
+        <stop offset="100%" style="stop-color:white; stop-opacity:0.2" />
+      </linearGradient>
+      <linearGradient id="fogGradient3" x1="100%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:white; stop-opacity:0.6" />
+        <stop offset="50%" style="stop-color:white; stop-opacity:0.8" />
+        <stop offset="100%" style="stop-color:white; stop-opacity:0.6" />
+      </linearGradient>
+
+      <!-- Diagonal hatch patterns -->
       <pattern id="diaHatch0" width="1" height="13" patternUnits="userSpaceOnUse" patternTransform="rotate(44)">
         <rect x1="0" width="1" y1="0" height="100%" fill="none"/>
         <line x1="0" x2="100%" y1="0" y2="0" stroke-width="4" stroke="#6d6d6d26" />
@@ -206,7 +285,6 @@ function connectEvents() {
       </filter>
     `;
     svgElement.insertBefore(defElement, svgElement.firstChild);
-    //externalWindow.document.body.appendChild(previewClone);
 
     const newScript = externalWindow.document.createElement('script');
     newScript.innerHTML = `
@@ -229,6 +307,29 @@ function connectEvents() {
     externalWindow.document.body.appendChild(newScript);
     externalWindow.onload();
   };
+}
+function convertCSSTransformToSVGMatrix(cssTransform, w, h) {
+  const translateMatch = cssTransform.match(/translate\(\s*([-.\d]+)px,\s*([-.\d]+)px\)/);
+  const scaleMatch = cssTransform.match(/scale\(\s*([-.\d]+)(?:,\s*([-.\d]+))?\s*\)/);
+  const rotateMatch = cssTransform.match(/rotate\(\s*([-.\d]+)deg\)/);
+  let result = ''
+  if (translateMatch) {
+    const tx = parseFloat(translateMatch[1]) - w / 2;
+    const ty = parseFloat(translateMatch[2]) - h / 2;
+    result += `translate(${tx}, ${ty}) `;
+  }
+  if (scaleMatch) {
+    const sx = parseFloat(scaleMatch[1]);
+    const sy = scaleMatch[2] ? parseFloat(scaleMatch[2]) : sx;
+    //result += `scale(${sx}, ${sy}) `;
+
+  }
+  if (rotateMatch) {
+    const angle = parseFloat(rotateMatch[1]);
+    result += `rotate(${angle}, 0,0) `;
+  }
+  console.log('Converted SVG Transform:', result.trim());
+  return result.trim();
 }
 async function getThisScreen() {
   const screenDetails = await window.getScreenDetails();
