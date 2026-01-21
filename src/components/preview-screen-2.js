@@ -1,23 +1,24 @@
-import { externalScreen } from '../main';
-const GRAYS = [
-  'rgb(220, 220, 220)',
-  'rgb(200, 200, 200)',
-  'rgb(180, 180, 180)',
-  'rgb(160, 160, 160)',
-  'rgb(140, 140, 140)',
-  'rgb(120, 120, 120)',
-  'rgb(100, 100, 100)',
-  'rgb(80, 80, 80)',
-];
-export class PreviewScreen extends HTMLElement {
+import { thisScreen, externalScreen } from '../main';
+
+export class PreviewScreen2 extends HTMLElement {
   constructor() {
     super();
+    this.bgImg = null;
+    this.mapImg = null;
+    this.svgElement = null;
     this.fade = null;
-    this.scale = null;
     this.currentTranslate = [0, 0];
+    this.minRadius = 5;
+    this.maxRadius = 100;
+    this.circleRadius = 20;
   }
   connectedCallback() {
     this.className = 'bg-base-200 rounded-md overflow-hidden relative';
+    try {
+      this.setDimensions();
+    } catch (error) {
+      console.error('Error setting dimensions:', error);
+    }
 
     this.bgImg = document.createElement('img');
     this.bgImg.style.position = 'absolute';
@@ -33,7 +34,7 @@ export class PreviewScreen extends HTMLElement {
     this.mapImg = document.createElement('img');
     this.mapImg.id = 'map-image';
     this.mapImg.className =
-      'origin-center mask-x-from-70% mask-x-from-80% mask-x-from-100% mask-x-from-90% mask-x-to-100% mask-y-from-70% mask-y-from-80% mask-y-from-100% mask-y-from-90% mask-y-to-100%';
+      'block max-w-none max-h-none origin-center mask-x-from-70% mask-x-from-80% mask-x-from-100% mask-x-from-90% mask-x-to-100% mask-y-from-70% mask-y-from-80% mask-y-from-100% mask-y-from-90% mask-y-to-100%';
     this.mapImg.style.position = 'absolute';
     this.mapImg.style.top = '50%';
     this.mapImg.style.left = '50%';
@@ -51,68 +52,37 @@ export class PreviewScreen extends HTMLElement {
     this.appendChild(this.svgElement);
 
     this.fade = document.getElementById('background-fade-range').value;
-
-    this.connectEvents();
     this.setBackgroundFade(this.fade);
     this.setBackgroundImage('None');
+    this.connectEvents();
   }
-  computeTranslatePercent() {
-    const scaleMatch = this.mapImg.style.transform.match(/scale\(([\d.]+)\)/);
-    const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-    const clientWidth = this.clientWidth;
-    const clientHeight = this.clientHeight;
-    const x = clientWidth / 2 + this.currentTranslate[0] * scale;
-    const y = clientHeight / 2 + this.currentTranslate[1] * scale;
-
-    const translateXPercent = (x / clientWidth) * 100;
-    const translateYPercent = (y / clientHeight) * 100;
-    console.log('Translate Percent:', translateXPercent, translateYPercent);
-    return [translateXPercent, translateYPercent];
-  }
-  computeHeightPercent() {
-    const scaleMatch = this.mapImg.style.transform.match(/scale\(([\d.]+)\)/);
-    const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-    const clientHeight = this.clientHeight;
-    const imgHeight = this.mapImg.clientHeight;
-    const heightPercent = ((imgHeight * scale) / clientHeight) * 100;
-    console.log('Height Percent:', heightPercent);
-    return heightPercent;
-  }
-  computeWidthPercent() {
-    const scaleMatch = this.mapImg.style.transform.match(/scale\(([\d.]+)\)/);
-    const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-    const clientWidth = this.clientWidth;
-    const imgWidth = this.mapImg.clientWidth;
-    const widthPercent = ((imgWidth * scale) / clientWidth) * 100;
-    console.log('Width Percent:', widthPercent);
-    return widthPercent;
-  }
-
   connectEvents() {
     const zoomSelectElement = document.querySelector('zoom-select');
     zoomSelectElement.querySelector('#panzoom-element').addEventListener('panzoomchange', (event) => {
       const { scale, x, y } = event.detail;
+      console.log(scale, zoomSelectElement.initialScale);
       const scale2 = scale * zoomSelectElement.initialScale;
-      console.log({ scale, scale2, x, y });
-      this.currentTranslate = [x, y];
+      const thisScale = this.computeScaleTo500px();
+      this.currentTranslate = [x / thisScale, y / thisScale];
       const currentRotationMatch = this.mapImg.style.transform.match(/rotate\(([-\d.]+)deg\)/);
       let rotation = 0;
       if (currentRotationMatch) {
         rotation = parseFloat(currentRotationMatch[1]);
       }
-
-      this.mapImg.style.transform = `translate(-50%, -50%) scale(${(scale * this.scale) / this.screenScale}) translate(${this.currentTranslate[0]}px, ${this.currentTranslate[1]}px) rotate(${rotation}deg)`;
+      this.mapImg.style.transform = `translate(-50%, -50%) scale(${scale2}) translate(${this.currentTranslate[0]}px, ${this.currentTranslate[1]}px) rotate(${rotation}deg)`;
     });
     this.svgElement.addEventListener('click', (event) => {
+      const thisScale = this.computeScaleTo500px();
       if (document.getElementById('enable-fog-drawing-checkbox').checked === false) {
         return;
       }
       const rect = this.svgElement.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-      this.addCircleOnClick(x, y);
+      this.addCircleOnClick(x / thisScale, y / thisScale);
     });
     this.svgElement.addEventListener('contextmenu', (event) => {
+      const thisScale = this.computeScaleTo500px();
       if (document.getElementById('enable-fog-drawing-checkbox').checked === false) {
         return;
       }
@@ -120,42 +90,8 @@ export class PreviewScreen extends HTMLElement {
       const rect = this.svgElement.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-      this.removeCircleAtCoordinate(x, y);
+      this.removeCircleAtCoordinate(x / thisScale, y / thisScale);
     });
-  }
-  setBackgroundImage(url) {
-    this.bgImg.src =
-      url === 'None' ? 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' : url;
-    this.style.backgroundImage = `url(${url})`;
-  }
-  setImageSource(src) {
-    this.mapImg.src = src;
-    this.mapImg.onload = () => {
-      const naturalWidth = this.mapImg.naturalWidth;
-      const naturalHeight = this.mapImg.naturalHeight;
-      const containerWidth = this.clientWidth;
-      const containerHeight = this.clientHeight;
-      const widthScale = containerWidth / naturalWidth;
-      const heightScale = containerHeight / naturalHeight;
-      this.scale = Math.min(widthScale, heightScale);
-    };
-  }
-  setNewDimensions() {
-    const w = this.clientWidth;
-    const h = this.clientHeight;
-    const screenW = externalScreen.availWidth;
-    const screenH = externalScreen.availHeight;
-    this.screenScale = Math.min(screenW / w, screenH / h);
-    this.svgElement.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    this.minRadius = Math.min(w, h) / 100;
-    this.maxRadius = Math.min(w, h) / 5;
-    this.setCircleRadius(document.getElementById('circle-radius').value);
-  }
-  clearSvg() {
-    console.log('clearing svg');
-    while (this.svgElement.firstChild) {
-      this.svgElement.removeChild(this.svgElement.firstChild);
-    }
   }
   addCircleOnClick(x, y) {
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -181,6 +117,24 @@ export class PreviewScreen extends HTMLElement {
   setCircleRadius(radius) {
     this.circleRadius = this.minRadius + (this.maxRadius - this.minRadius) * (radius / 100);
   }
+  computeScaleTo500px() {
+    if (externalScreen.availHeight >= externalScreen.availWidth) {
+      return 500 / externalScreen.availWidth;
+    } else {
+      return 500 / externalScreen.availHeight;
+    }
+  }
+  setImageSource(src) {
+    this.mapImg.src = src == '' ? 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==' : src;
+    this.mapImg.onload = () => {
+      this.mapImg.width = this.mapImg.naturalWidth;
+      this.mapImg.height = this.mapImg.naturalHeight;
+    };
+  }
+  setBackgroundImage(src) {
+    this.bgImg.src =
+      src === 'None' ? 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' : src;
+  }
   rotateImage() {
     const currentRotation = this.mapImg.style.transform.match(/rotate\(([-\d.]+)deg\)/);
     const currentScaleMatch = this.mapImg.style.transform.match(/scale\(([\d.]+)\)/);
@@ -198,6 +152,28 @@ export class PreviewScreen extends HTMLElement {
     let rotation = currentRotation ? parseFloat(currentRotation[1]) : 0;
     rotation = (rotation + 90) % 360;
     this.mapImg.style.transform = `translate(-50%, -50%) scale(${scale}) translate(${translateX}px, ${translateY}px) rotate(${rotation}deg)`;
+  }
+  setDimensions() {
+    if (externalScreen) {
+      this.style.width = `${externalScreen.availWidth}px`;
+      this.style.height = `${externalScreen.availHeight}px`;
+      this.style.transform = `scale(${this.computeScaleTo500px()})`;
+      this.style.transformOrigin = 'top left';
+    } else {
+      this.style.width = '500px';
+      this.style.height = '500px';
+    }
+    this.minRadius = Math.min(externalScreen.availWidth, externalScreen.availHeight) / 100;
+    this.maxRadius = Math.min(externalScreen.availWidth, externalScreen.availHeight) / 5;
+    this.setCircleRadius(document.getElementById('circle-radius').value);
+    if (this.svgElement) {
+      this.svgElement.setAttribute('viewBox', `0 0 ${this.clientWidth} ${this.clientHeight}`);
+    }
+  }
+  clearSvg() {
+    while (this.svgElement.firstChild) {
+      this.svgElement.removeChild(this.svgElement.firstChild);
+    }
   }
   setBackgroundFade(value) {
     this.fade = value;
@@ -244,4 +220,4 @@ export class PreviewScreen extends HTMLElement {
     }
   }
 }
-customElements.define('preview-screen', PreviewScreen);
+customElements.define('preview-screen-2', PreviewScreen2);

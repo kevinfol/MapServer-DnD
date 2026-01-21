@@ -6,7 +6,7 @@ export class ZoomSelect extends HTMLElement {
     this.initialScale = null;
   }
   connectedCallback() {
-    this.className = 'relative w-full h-full bg-base-200 rounded-md overflow-hidden';
+    this.className = 'relative w-80 h-80 max-h-80 max-w-80 bg-base-200 rounded-md overflow-hidden';
     // Parent container for panzoom
     const panzoomParent = document.createElement('div');
     panzoomParent.id = 'panzoom-parent';
@@ -46,7 +46,7 @@ export class ZoomSelect extends HTMLElement {
     const containerHeight = img.clientHeight;
     const widthScale = containerWidth / naturalWidth;
     const heightScale = containerHeight / naturalHeight;
-    this.initialScale = Math.min(widthScale, heightScale);
+    this.initialScale = Math.max(widthScale, heightScale);
   }
   rotateImage() {
     const img = this.querySelector('#panzoom-image');
@@ -58,7 +58,7 @@ export class ZoomSelect extends HTMLElement {
 
   setImageSource(src) {
     const img = this.querySelector('#panzoom-image');
-    img.src = src;
+    img.src = src == '' ? 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==' : src;
   }
   initializePanzoom() {
     const panzoomElement = this.querySelector('#panzoom-element');
