@@ -91,7 +91,7 @@ function connectEvents() {
       externalWindow = await window.open(
         '',
         '_about:blank',
-        `left=${externalScreen.availLeft},top=${externalScreen.availTop},width=${externalScreen.availWidth},height=${externalScreen.availHeight},toolbar=no,menubar=no,location=no,resizable=yes,scrollbars=no,popup=yes,status=no`,
+        `left=${externalScreen.availLeft},top=${externalScreen.availTop},width=${externalScreen.availWidth},height=${externalScreen.availHeight},toolbar=no,menubar=no,location=no,resizable=yes,scrollbars=no,popup=yes,status=no,fullscreen=yes`,
       );
       externalWindow.document.write(
         `<html><head><title>External Map Display</title></head><body class="overflow-hidden" style="background:black; position:relative; width:100%; height:100%; margin:0; padding:0;">
@@ -120,6 +120,7 @@ function connectEvents() {
       console.log('External window is not open.');
       return;
     }
+    externalWindow.document.head.innerHTML = '<title>External Map Display</title>';
     document.head.querySelectorAll('link, style').forEach((htmlElement) => {
       externalWindow.document.head.appendChild(htmlElement.cloneNode(true));
     });
@@ -131,7 +132,7 @@ function connectEvents() {
     div.className = `relative overflow-hidden bg-black`
     div.style.width = '100%';
     div.style.height = '100%';
-    div.style.transformOrigin = 'top left';
+    div.style.transformOrigin = 'center';
     div.style.transform = 'scale(1)'
     externalWindow.document.body.appendChild(div);
 
@@ -166,7 +167,7 @@ function connectEvents() {
     svgElement.style.top = '0';
     svgElement.style.left = '0';
     svgElement.style.zIndex = '2';
-    svgElement.setAttribute('viewBox', `0 0 ${previewScreenElement.clientWidth} ${previewScreenElement.clientHeight}`);
+    svgElement.setAttribute('viewBox', `0 0 ${div.clientWidth} ${div.clientHeight}`);
     svgElement.innerHTML = previewScreenElement.svgElement.innerHTML;
     div.appendChild(svgElement);
 
@@ -201,33 +202,19 @@ function connectEvents() {
 
       const svgMask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
       svgMask.setAttribute('id', 'mapMask');
-      //svgMask.setAttribute('maskUnits', 'userSpaceOnUse');
-      //svgMask.setAttribute('width', div.clientWidth);
-      //svgMask.setAttribute('height', div.clientHeight);
+
       const map_imageRect = map_image.getBoundingClientRect();
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
 
-      const redRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      redRect.setAttribute('x', map_image.offsetLeft - 0.5 * map_image.offsetWidth);
-      redRect.setAttribute('y', map_image.offsetTop - 0.5 * map_image.offsetHeight);
-      redRect.setAttribute('width', map_image.offsetWidth);
-      redRect.setAttribute('height', map_image.offsetHeight);
-      redRect.setAttribute('fill', 'none');
-      redRect.setAttribute('stroke', 'red');
-      redRect.setAttribute('stroke-width', '2');
-      //
-      svgElement.appendChild(redRect);
-
 
       rect.setAttribute('x', map_imageRect.left);
-      rect.setAttribute('y', map_imageRect.top);
-      rect.setAttribute('transform-origin', 'center');
+      rect.setAttribute('y', map_imageRect.top);;
       rect.setAttribute('width', map_imageRect.width);
       rect.setAttribute('height', map_imageRect.height);
       const mapImgMaskClasses = previewScreenElement.mapImg.className.split(' ').filter((cn) => cn.startsWith('mask-'));
-      //if (mapImgMaskClasses.length > 0) {
-      //  rect.setAttribute('class', mapImgMaskClasses.join(' '));
-      //};
+      if (mapImgMaskClasses.length > 0) {
+        rect.setAttribute('class', mapImgMaskClasses.join(' '));
+      };
 
       rect.setAttribute('fill', 'white');
       svgMask.appendChild(rect);
