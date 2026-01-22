@@ -159,7 +159,6 @@ function connectEvents() {
     map_image.src = previewScreenElement.mapImg.src;
     div.appendChild(map_image);
 
-
     const svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svgElement.setAttribute('width', '100%');
     svgElement.setAttribute('height', '100%');
@@ -198,14 +197,11 @@ function connectEvents() {
     }
     map_image.onload = () => {
 
-
-
       const svgMask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
       svgMask.setAttribute('id', 'mapMask');
 
       const map_imageRect = map_image.getBoundingClientRect();
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-
 
       rect.setAttribute('x', map_imageRect.left);
       rect.setAttribute('y', map_imageRect.top);;
@@ -220,7 +216,6 @@ function connectEvents() {
       svgMask.appendChild(rect);
       svgElement.appendChild(svgMask);
     }
-
 
     const defElement = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
     defElement.innerHTML = `
@@ -263,6 +258,7 @@ function connectEvents() {
         <rect x1="0" width="1" y1="0" height="100%" fill="none"/>
         <line x1="0" x2="100%" y1="0" y2="0" stroke-width="4" stroke="#6d6d6d26" />
       </pattern>
+
       <!-- Fog filter -->
       <filter id="fogFilter">
         <!-- Generate noise -->
@@ -294,29 +290,6 @@ function connectEvents() {
     externalWindow.document.body.appendChild(newScript);
     externalWindow.onload();
   };
-}
-function convertCSSTransformToSVGMatrix(cssTransform, w, h) {
-  const translateMatch = cssTransform.match(/translate\(\s*([-.\d]+)px,\s*([-.\d]+)px\)/);
-  const scaleMatch = cssTransform.match(/scale\(\s*([-.\d]+)(?:,\s*([-.\d]+))?\s*\)/);
-  const rotateMatch = cssTransform.match(/rotate\(\s*([-.\d]+)deg\)/);
-  let result = ''
-  if (translateMatch) {
-    const tx = parseFloat(translateMatch[1]) - w / 2;
-    const ty = parseFloat(translateMatch[2]) - h / 2;
-    result += `translate(${tx}, ${ty}) `;
-  }
-  if (scaleMatch) {
-    const sx = parseFloat(scaleMatch[1]);
-    const sy = scaleMatch[2] ? parseFloat(scaleMatch[2]) : sx;
-    //result += `scale(${sx}, ${sy}) `;
-
-  }
-  if (rotateMatch) {
-    const angle = parseFloat(rotateMatch[1]);
-    result += `rotate(${angle}, 0,0) `;
-  }
-  console.log('Converted SVG Transform:', result.trim());
-  return result.trim();
 }
 async function getThisScreen() {
   const screenDetails = await window.getScreenDetails();
