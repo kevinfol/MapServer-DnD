@@ -8,6 +8,7 @@ import { createIcons, icons } from 'lucide';
 import { ZoomSelect } from '@/components/zoom-select.js';
 import { PreviewScreen } from '@/components/preview-screen.js';
 import { PreviewScreen2 } from '@/components/preview-screen-2.js';
+import { COLORS } from './cssColors';
 
 const BG_IMAGE_URLS = import.meta.glob('@/bg-images/*.{jpg,png,gif,jpeg}', {
   eager: true,
@@ -25,9 +26,31 @@ const backgroundFadeRange = document.getElementById('background-fade-range');
 const fogCheckbox = document.getElementById('enable-fog-drawing-checkbox');
 const openExternalButton = document.getElementById('open-external-screen-btn');
 const sendToExternalButton = document.getElementById('send-to-external-screen-btn');
+const scaleSelect = document.getElementById('output-scale-select');
+const fogColorSelect = document.getElementById('fog-color-select');
+const gridColorSelect = document.getElementById('grid-line-color-select');
 
 window.onload = async () => {
   // Get the elements
+
+  // populate the fog colors
+
+  for (const color of COLORS) {
+    const option = document.createElement('option');
+    option.value = color;
+    option.innerHTML = `
+      <span class="w-5 h-5 inline-block mr-2 align-middle rounded-sm" style="background-color: ${color}; border: 1px solid #000;"></span>
+      ${color.toUpperCase()}
+    `
+    const gridOption = document.createElement('option')
+    gridOption.value = color;
+    gridOption.innerHTML = `
+      <span class="w-5 h-5 inline-block mr-2 align-middle rounded-sm" style="background-color: ${color}; border: 1px solid #000;"></span>
+      ${color.toUpperCase()}
+    `
+    fogColorSelect.appendChild(option);
+    gridColorSelect.appendChild(gridOption);
+  }
 
   createIcons({ icons });
   // Populate background select
@@ -171,19 +194,27 @@ function connectEvents() {
     div.appendChild(svgElement);
 
     let i = 0;
-    for (const circle of svgElement.querySelectorAll('circle')) {
+    const gridGroup = svgElement.querySelector('#grid-group');
+    const circleGroup = svgElement.querySelector('#circle-group');
+    gridGroup.setAttribute('mask', 'url(#mapMask)');
+    gridGroup.style.mask = 'url(#mapMask)';
+    circleGroup.setAttribute('mask', 'url(#mapMask)');
+    circleGroup.style.mask = 'url(#mapMask)';
+
+    for (const circle of circleGroup.querySelectorAll('circle')) {
+      console.log('current circle:', circle);
       const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       bgCircle.setAttribute('cx', circle.getAttribute('cx'));
       bgCircle.setAttribute('cy', circle.getAttribute('cy'));
       bgCircle.setAttribute('r', circle.getAttribute('r'));
-      bgCircle.setAttribute('fill', grays[i % grays.length] + 'f2');
+      bgCircle.setAttribute('fill', grays[i % grays.length] + 'f5');
       bgCircle.setAttribute('filter', 'url(#fogFilter)');
-      bgCircle.setAttribute('mask', 'url(#mapMask)');
-      svgElement.insertBefore(bgCircle, circle);
+      //bgCircle.setAttribute('mask', 'url(#mapMask)');
+      circleGroup.insertBefore(bgCircle, circle);
 
       circle.setAttribute('filter', 'url(#fogFilter)');
       circle.setAttribute('fill', 'url(#fogGradient' + (i % 4) + ')');
-      circle.setAttribute('mask', 'url(#mapMask)');
+      //circle.setAttribute('mask', 'url(#mapMask)');
       i++;
       const newCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       newCircle.setAttribute('cx', circle.getAttribute('cx'));
@@ -193,7 +224,7 @@ function connectEvents() {
       newCircle.setAttribute('fill', 'url(#diaHatch' + (i % 4) + ')');
       newCircle.setAttribute('mask', 'url(#mapMask)');
 
-      circle.after(newCircle);
+      //circle.after(newCircle);
     }
     map_image.onload = () => {
 
@@ -218,27 +249,28 @@ function connectEvents() {
     }
 
     const defElement = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const chosenFogColor = fogColorSelect.value || 'white';
     defElement.innerHTML = `
       <!-- gradients for fog effect -->
       <linearGradient id="fogGradient0" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" style="stop-color:white; stop-opacity:0.1" />
-        <stop offset="50%" style="stop-color:white; stop-opacity:0.3" />
-        <stop offset="100%" style="stop-color:white; stop-opacity:0.1" />
+        <stop offset="0%" style="stop-color:${chosenFogColor}; stop-opacity:0.1" />
+        <stop offset="50%" style="stop-color:${chosenFogColor}; stop-opacity:0.3" />
+        <stop offset="100%" style="stop-color:${chosenFogColor}; stop-opacity:0.1" />
       </linearGradient>
       <linearGradient id="fogGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style="stop-color:white; stop-opacity:0.3" />
-        <stop offset="50%" style="stop-color:white; stop-opacity:0.5" />
-        <stop offset="100%" style="stop-color:white; stop-opacity:0.3" />
+        <stop offset="0%" style="stop-color:${chosenFogColor}; stop-opacity:0.3" />
+        <stop offset="50%" style="stop-color:${chosenFogColor}; stop-opacity:0.8" />
+        <stop offset="100%" style="stop-color:${chosenFogColor}; stop-opacity:0.3" />
       </linearGradient>
       <linearGradient id="fogGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:white; stop-opacity:0.2" />
-        <stop offset="50%" style="stop-color:white; stop-opacity:0.4" />
-        <stop offset="100%" style="stop-color:white; stop-opacity:0.2" />
+        <stop offset="0%" style="stop-color:${chosenFogColor}; stop-opacity:0.2" />
+        <stop offset="50%" style="stop-color:${chosenFogColor}; stop-opacity:0.7" />
+        <stop offset="100%" style="stop-color:${chosenFogColor}; stop-opacity:0.2" />
       </linearGradient>
       <linearGradient id="fogGradient3" x1="100%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style="stop-color:white; stop-opacity:0.6" />
-        <stop offset="50%" style="stop-color:white; stop-opacity:0.8" />
-        <stop offset="100%" style="stop-color:white; stop-opacity:0.6" />
+        <stop offset="0%" style="stop-color:${chosenFogColor}; stop-opacity:0.6" />
+        <stop offset="50%" style="stop-color:${chosenFogColor}; stop-opacity:0.95" />
+        <stop offset="100%" style="stop-color:${chosenFogColor}; stop-opacity:0.6" />
       </linearGradient>
 
       <!-- Diagonal hatch patterns -->
@@ -277,7 +309,7 @@ function connectEvents() {
         animateFog();
       }
       function animateFog() {
-        window.frame_ += 0.0007; // speed of fog movement
+        window.frame_ += 0.0507; // speed of fog movement
         window.frame_ = window.frame_ % (2 * Math.PI);
         const freqX = 0.01 + Math.sin(window.frame_) * 0.002;
         const freqY = 0.02 + Math.cos(window.frame_) * 0.002;
@@ -285,7 +317,8 @@ function connectEvents() {
         if (turb) {
           turb.setAttribute('baseFrequency', freqX + ' ' + freqY);
         }
-        requestAnimationFrame(animateFog);
+        setTimeout(() => {requestAnimationFrame(animateFog)}, 150);
+        //requestAnimationFrame(animateFog);
       }
     `;
     externalWindow.document.body.appendChild(newScript);

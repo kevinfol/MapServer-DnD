@@ -51,17 +51,53 @@ export class PreviewScreen2 extends HTMLElement {
     this.svgElement.setAttribute('viewBox', `0 0 ${this.clientWidth} ${this.clientHeight}`);
     this.appendChild(this.svgElement);
 
+    this.gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    this.gridGroup.setAttribute('id', 'grid-group');
+    this.svgElement.appendChild(this.gridGroup);
+
+    this.circleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    this.circleGroup.setAttribute('id', 'circle-group');
+    this.svgElement.appendChild(this.circleGroup);
+
     this.fade = document.getElementById('background-fade-range').value;
     this.setBackgroundFade(this.fade);
     this.setBackgroundImage('None');
     this.connectEvents();
   }
+  updateGrid() {
+    const gridSelect = document.getElementById('grid-lines-select');
+    const gridColorSelect = document.getElementById('grid-line-color-select');
+    const gridOpacitySelect = document.getElementById('grid-line-opacity-range');
+    this.removeGrids();
+    if (gridSelect.value !== 'none' && gridSelect.value.includes('hex-')) {
+      this.drawHexGrid(+(gridSelect.value.split('-')[1]), gridColorSelect.value, +(gridOpacitySelect.value));
+    }
+    if (gridSelect.value !== 'none' && gridSelect.value.includes('square-')) {
+      this.drawSquareGrid(+(gridSelect.value.split('-')[1]), gridColorSelect.value, +(gridOpacitySelect.value));
+    }
+  }
   connectEvents() {
+    const scaleSelectElement = document.getElementById('output-scale-select');
+    const gridSelect = document.getElementById('grid-lines-select');
+    const gridColorSelect = document.getElementById('grid-line-color-select');
+    const gridOpacitySelect = document.getElementById('grid-line-opacity-range');
+    gridSelect.addEventListener('change', () => {
+      this.updateGrid()
+
+    });
+    gridColorSelect.addEventListener('change', () => {
+      this.updateGrid();
+    });
+    gridOpacitySelect.addEventListener('change', () => {
+      this.updateGrid();
+    });
     const zoomSelectElement = document.querySelector('zoom-select');
+    scaleSelectElement.addEventListener('change', () => {
+      zoomSelectElement.panzoomInstance.zoom(zoomSelectElement.panzoomInstance.getScale())
+    })
     zoomSelectElement.querySelector('#panzoom-element').addEventListener('panzoomchange', (event) => {
       const { scale, x, y } = event.detail;
-      console.log(scale, zoomSelectElement.initialScale);
-      const scale2 = scale * zoomSelectElement.initialScale;
+      const scale2 = scale * zoomSelectElement.initialScale * (+scaleSelectElement.value);
       const thisScale = this.computeScaleTo500px();
       this.currentTranslate = [x / thisScale, y / thisScale];
       const currentRotationMatch = this.mapImg.style.transform.match(/rotate\(([-\d.]+)deg\)/);
@@ -93,23 +129,88 @@ export class PreviewScreen2 extends HTMLElement {
       this.removeCircleAtCoordinate(x / thisScale, y / thisScale);
     });
   }
+  removeGrids() {
+    const grids = this.gridGroup.getElementsByTagName('g');
+    for (const grid of grids) {
+      this.gridGroup.removeChild(grid);
+    }
+  }
+  drawHexGrid(scalePct, color, opacity) {
+    const grid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+    const stepX = externalScreen.devicePixelRatio * 96 * (scalePct / 100);
+    const stepY = stepX//(Math.sqrt(3) / 2) * stepX;
+
+    for (let y = -stepY; y <= this.clientHeight + stepY; y += stepY * (3 / 4)) {
+      for (let x = -stepX; x <= this.clientWidth + stepX; x += stepX) {
+        //const offsetX = (Math.floor(y / stepY) % 2) * (stepX / 2);
+        const offsetX = (y / (stepY * (3 / 4)) % 2) * (stepX / 2);
+        const hexagon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        const points = [
+          [x + offsetX + stepX / 2, y],
+          [x + offsetX + stepX, y + stepY / 4],
+          [x + offsetX + stepX, y + (3 * stepY) / 4],
+          [x + offsetX + stepX / 2, y + stepY],
+          [x + offsetX, y + (3 * stepY) / 4],
+          [x + offsetX, y + stepY / 4],
+        ]
+          .map((point) => point.join(','))
+          .join(' ');
+        hexagon.setAttribute('points', points);
+        hexagon.setAttribute('stroke', color);
+        hexagon.setAttribute('stroke-width', '2');
+        hexagon.setAttribute('fill', 'none');
+        hexagon.setAttribute('stroke-opacity', opacity / 100);
+        grid.appendChild(hexagon);
+      }
+    }
+    this.gridGroup.appendChild(grid);
+  }
+  drawSquareGrid(scalePct, color, opacity) {
+    const grid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const stepX = externalScreen.devicePixelRatio * 96 * (scalePct / 100);
+    const stepY = externalScreen.devicePixelRatio * 96 * (scalePct / 100);
+    for (let x = 0; x <= this.clientWidth; x += stepX) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x);
+      line.setAttribute('y1', 0);
+      line.setAttribute('x2', x);
+      line.setAttribute('y2', this.clientHeight);
+      line.setAttribute('stroke', color);
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('stroke-opacity', opacity / 100);
+      grid.appendChild(line);
+    }
+    for (let y = 0; y <= this.clientHeight; y += stepY) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', 0);
+      line.setAttribute('y1', y);
+      line.setAttribute('x2', this.clientWidth);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', color);
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('stroke-opacity', opacity / 100);
+      grid.appendChild(line);
+    }
+    this.gridGroup.appendChild(grid);
+  }
   addCircleOnClick(x, y) {
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
     circle.setAttribute('r', this.circleRadius);
     circle.setAttribute('fill', 'rgba(255,0,0,0.5)');
-    this.svgElement.appendChild(circle);
+    this.circleGroup.appendChild(circle);
   }
   removeCircleAtCoordinate(x, y) {
-    const circles = this.svgElement.getElementsByTagName('circle');
+    const circles = this.circleGroup.getElementsByTagName('circle');
     for (const circle of circles) {
       const cx = parseFloat(circle.getAttribute('cx'));
       const cy = parseFloat(circle.getAttribute('cy'));
       const r = parseFloat(circle.getAttribute('r'));
       const distance = Math.sqrt((cx - x) ** 2 + (cy - y) ** 2);
       if (distance <= r) {
-        this.svgElement.removeChild(circle);
+        this.circleGroup.removeChild(circle);
         break;
       }
     }
@@ -171,8 +272,8 @@ export class PreviewScreen2 extends HTMLElement {
     }
   }
   clearSvg() {
-    while (this.svgElement.firstChild) {
-      this.svgElement.removeChild(this.svgElement.firstChild);
+    while (this.circleGroup.firstChild) {
+      this.circleGroup.removeChild(this.circleGroup.firstChild);
     }
   }
   setBackgroundFade(value) {

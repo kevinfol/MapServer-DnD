@@ -1,2 +1,7 @@
 @import 'tailwindcss';
 @plugin "daisyui";
+
+.customselect,
+::picker(.customselect) {
+    appearance: base-select;
+}
