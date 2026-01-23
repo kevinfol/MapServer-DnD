@@ -302,6 +302,7 @@ function connectEvents() {
     svgElement.insertBefore(defElement, svgElement.firstChild);
 
     const newScript = externalWindow.document.createElement('script');
+    const fogSpeedValue = +document.getElementById('fog-speed-range').value;
     newScript.innerHTML = `
       
       window.onload = function() {
@@ -309,7 +310,7 @@ function connectEvents() {
         animateFog();
       }
       function animateFog() {
-        window.frame_ += 0.0507; // speed of fog movement
+        window.frame_ += ${fogSpeedValue / 1000}; // speed of fog movement
         window.frame_ = window.frame_ % (2 * Math.PI);
         const freqX = 0.01 + Math.sin(window.frame_) * 0.002;
         const freqY = 0.02 + Math.cos(window.frame_) * 0.002;

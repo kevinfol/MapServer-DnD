@@ -86,6 +86,18 @@
                                     <i data-lucide="trash"></i>
                                     Clear Fog Drawing
                                 </button>
+                                <label class="label">
+                                    <input
+                                        type="range"
+                                        id="fog-speed-range"
+                                        class="w-full range range-primary"
+                                        min="0"
+                                        max="100"
+                                        step="5"
+                                        value="20"
+                                    >
+                                    Fog Speed
+                                </label>
                             </fieldset>
                             <fieldset class="fieldset">
                                 <legend class="fieldset-legend">Output Options</legend>
@@ -94,10 +106,10 @@
                                 </label>
                                 <select id="output-scale-select" class="w-full select-bordered select">
                                     <option value="1" selected>1x (Original Size)</option>
-                                    <option value="2">2x</option>
-                                    <option value="3">3x</option>
-                                    <option value="4">4x</option>
-                                    <option value="5">5x</option>
+                                    <option value="0.5">2x</option>
+                                    <option value="0.333">3x</option>
+                                    <option value="0.25">4x</option>
+                                    <option value="0.2">5x</option>
                                 </select>
                                 <button id="rotate-btn" class="btn btn-sm btn-secondary">
                                     <i data-lucide="rotate-ccw"></i>
